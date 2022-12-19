@@ -27,9 +27,11 @@ func main() {
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	r.Get("/kill-function", func(w http.ResponseWriter, r *http.Request) {
+		err := container.CmdReexec.Process.Signal(syscall.SIGQUIT)
+		if err != nil {
+			//fmt.Println(err)
+		}
 
-		signals.FunctionSigs1 <- syscall.SIGQUIT
-		signals.FunctionSigs2 <- syscall.SIGQUIT
 		signals.Sigs <- syscall.SIGQUIT
 		w.Write([]byte("kill function ok..."))
 	})
@@ -45,14 +47,10 @@ func main() {
 	}
 
 	go listenSignal(context.Background(), server)
-	server.ListenAndServe()
-	//err := http.ListenAndServe(":5000", r)
-	//if err != nil {
-	//	return
-	//}
-
-	//
-
+	err := server.ListenAndServe()
+	if err != nil {
+		return
+	}
 }
 
 func listenSignal(ctx context.Context, httpSrv *http.Server) {
@@ -60,7 +58,10 @@ func listenSignal(ctx context.Context, httpSrv *http.Server) {
 	select {
 	case <-signals.Sigs:
 		fmt.Println("notify sigs")
-		httpSrv.Shutdown(ctx)
+		err := httpSrv.Shutdown(ctx)
+		if err != nil {
+			return
+		}
 		fmt.Println("http shutdown")
 	}
 }

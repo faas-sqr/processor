@@ -7,10 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"processor/pkg/signals"
 	"strconv"
 	"syscall"
 )
+
+var CmdReexec *exec.Cmd
+var CmdRun *exec.Cmd
 
 func initFunction() {
 	reexec.Register("nsInitialisation", nsInitialisation)
@@ -86,32 +88,30 @@ func setMount(root string) error {
 }
 
 func nsRun() {
-	cmd := exec.Command(os.Getenv("function"))
+	CmdRun = exec.Command(os.Getenv("function"))
 
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	CmdRun.Stdin = os.Stdin
+	CmdRun.Stdout = os.Stdout
+	CmdRun.Stderr = os.Stderr
 
-	cmd.Env = []string{"PS1=-[container]- # "}
+	CmdRun.Env = []string{"PS1=-[container]- # "}
 
-	if err := cmd.Run(); err != nil {
+	if err := CmdRun.Run(); err != nil {
 		fmt.Printf("Error running the %s command - %s\n", os.Getenv("function"), err)
 		os.Exit(1)
 	}
 
 	syscall.Unmount("/proc", 0)
 
-	shutdownFunction(cmd)
-	os.Setenv("pid2", string(rune(cmd.Process.Pid)))
 }
 
 func StartFunction(functionPath string) {
 	os.Setenv("function", functionPath)
 	//os.Setenv("function", "/bin/bash")
 	initFunction()
-	cmd := reexec.Command(append([]string{"nsInitialisation"},
+	CmdReexec = reexec.Command(append([]string{"nsInitialisation"},
 		os.Getenv("function"))...)
-	run(cmd)
+	run(CmdReexec)
 }
 
 func StartFunctionB(functionPath string) {
@@ -158,9 +158,6 @@ func run(cmd *exec.Cmd) {
 		os.Exit(1)
 	}
 
-	shutdownFunction(cmd)
-	os.Setenv("pid1", string(rune(cmd.Process.Pid)))
-
 	//if err := cmd.Wait(); err != nil {
 	//	fmt.Printf("Error running the reexec.Command - %s\n", err)
 	//	os.Exit(1)
@@ -170,17 +167,4 @@ func run(cmd *exec.Cmd) {
 	//	fmt.Printf("Error running the reexec.Command - %s\n", err)
 	//	os.Exit(1)
 	//}
-}
-
-func shutdownFunction(cmd *exec.Cmd) {
-	go func() {
-		select {
-		case <-signals.Sigs:
-		case <-signals.FunctionSigs1:
-		case <-signals.FunctionSigs2:
-			fmt.Println("notify sigs11111")
-			cmd.Process.Kill()
-			fmt.Println("http shutdown")
-		}
-	}()
 }
