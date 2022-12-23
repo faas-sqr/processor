@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "./function";
+
+// The handlerEvent service definition.
+service HandleEvent {
+  // handle a event
+  rpc ProcessEvent (Event) returns (Reply) {}
+}
+
+message Event {
+  map <string, string> heads = 1;
+  string body = 2;
+}
+
+message Reply {
+  string body = 1;
+}

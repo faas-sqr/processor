@@ -48,7 +48,7 @@ func main() {
 	go listenSignal(context.Background(), server)
 	err := server.ListenAndServe()
 	if err != nil {
-		return
+		panic(err)
 	}
 }
 

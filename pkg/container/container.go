@@ -22,9 +22,12 @@ func initFunction() {
 }
 
 func nsInitialisation() {
-	fmt.Printf("\n>> namespace setup code goes hereA <<\n\n")
+	fmt.Printf("\n>> namespace setup code begin...<<\n\n")
 
+	//container file path
 	setMount("/home/function/functionA")
+	// host file path
+	//setMount("/home/william/serverless/ubuntu-python/ubuntu-python")
 
 	if err := syscall.Sethostname([]byte("container")); err != nil {
 		fmt.Printf("Error setting hostname - %s\n", err)
@@ -44,9 +47,12 @@ func initFunctionB() {
 }
 
 func nsInitialisationB() {
-	fmt.Printf("\n>> namespace setup code goes hereA <<\n\n")
+	fmt.Printf("\n>> namespace setup code begin...<<\n\n")
 
+	//container file path
 	setMount("/home/function/functionB")
+	// host file path
+	//setMount("/home/william/serverless/ubuntu-python/ubuntu-python")
 
 	if err := syscall.Sethostname([]byte("container")); err != nil {
 		fmt.Printf("Error setting hostname - %s\n", err)
@@ -61,13 +67,13 @@ func nsInitialisationB() {
 func set_cgroups() {
 	cgroups := "/sys/fs/cgroup/"
 	pids := filepath.Join(cgroups, "pids")
-	os.MkdirAll(filepath.Join(pids, "ourContainer"), 0755)
-	ioutil.WriteFile(filepath.Join(pids, "ourContainer/pids.max"), []byte("10"), 0700)
+	os.MkdirAll(filepath.Join(pids, "ourContainer"), 0777)
+	ioutil.WriteFile(filepath.Join(pids, "ourContainer/pids.max"), []byte("10"), 0777)
 	//up here we limit the number of child processes to 10
 
-	ioutil.WriteFile(filepath.Join(pids, "ourContainer/notify_on_release"), []byte("1"), 0700)
+	ioutil.WriteFile(filepath.Join(pids, "ourContainer/notify_on_release"), []byte("1"), 0777)
 
-	ioutil.WriteFile(filepath.Join(pids, "ourContainer/cgroup.procs"), []byte(strconv.Itoa(os.Getpid())), 0700)
+	ioutil.WriteFile(filepath.Join(pids, "ourContainer/cgroup.procs"), []byte(strconv.Itoa(os.Getpid())), 0777)
 	// up here we write container PIDs to cgroup.procs
 }
 
@@ -83,7 +89,6 @@ func setMount(root string) error {
 	if err := syscall.Mount("proc", "proc", "proc", 0, ""); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -157,14 +162,4 @@ func run(cmd *exec.Cmd) {
 		fmt.Printf("Error starting the reexec.Command - %s\n", err)
 		os.Exit(1)
 	}
-
-	//if err := cmd.Wait(); err != nil {
-	//	fmt.Printf("Error running the reexec.Command - %s\n", err)
-	//	os.Exit(1)
-	//}
-
-	//if err := cmd.Wait(); err != nil {
-	//	fmt.Printf("Error running the reexec.Command - %s\n", err)
-	//	os.Exit(1)
-	//}
 }
